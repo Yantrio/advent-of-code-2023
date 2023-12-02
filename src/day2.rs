@@ -1,5 +1,3 @@
-use regex::Regex;
-
 #[derive(Debug, PartialEq)]
 pub enum RGB {
     Red,
@@ -14,9 +12,9 @@ pub struct BallCount {
 
 impl From<&str> for BallCount {
     fn from(s: &str) -> Self {
-        let mut split = s.split_whitespace();
-        let amount = split.next().unwrap().parse::<u32>().unwrap();
-        let color = match split.next().unwrap() {
+        let (amount_string, colour) = s.split_once(' ').unwrap();
+        let amount = amount_string.parse::<u32>().unwrap();
+        let color = match colour {
             "red" => RGB::Red,
             "green" => RGB::Green,
             "blue" => RGB::Blue,
@@ -33,13 +31,13 @@ pub struct Game {
 
 impl From<&str> for Game {
     fn from(s: &str) -> Self {
-        let game_number_regex = Regex::new(r"Game (\d+):").unwrap();
-
-        let game_number = game_number_regex.captures(s).unwrap()[1]
-            .parse::<u32>()
+        let (gnum, rounds_text) = s
+            .trim()
+            .trim_start_matches("Game ")
+            .split_once(":")
             .unwrap();
 
-        let rounds_text = s.split(':').nth(1).unwrap().trim();
+        let game_number = gnum.parse::<u32>().unwrap();
 
         let rounds = rounds_text
             .split(';')
@@ -110,7 +108,7 @@ pub fn solve_part2(input: &Vec<Game>) -> u32 {
     input
         .iter()
         .map(|game| game.get_fewest_possible_cubes())
-        .map(|(red_count, green_count, blue_count)| red_count * green_count * blue_count)
+        .map(|(r, g, b)| r * g * b)
         .sum()
 }
 
@@ -123,6 +121,16 @@ mod tests {
     Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
     Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
     Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
+
+    #[test]
+    fn test_game_from_str() {
+        let game = Game::from("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green");
+        assert_eq!(game.game_number, 1);
+        assert_eq!(game.rounds.len(), 3);
+        assert_eq!(game.rounds[0].len(), 2);
+        assert_eq!(game.rounds[0][0].amount, 3);
+        assert_eq!(game.rounds[0][0].color, RGB::Blue);
+    }
 
     #[test]
     fn test_input_generator() {
